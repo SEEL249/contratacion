@@ -1,0 +1,428 @@
+// =============================================================================
+// Plataforma de Gestión de Contratistas del Sector Público
+// schema.prisma — FUENTE DE VERDAD del modelo de datos
+// Ver: docs/03-rfc-arquitectura.md, docs/01-reglas-negocio-co.md
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Role {
+  SUPERADMIN
+  ADMIN_TENANT
+  PERSONA_CONTRATACION
+  SUPERVISOR
+  CONTRATISTA
+}
+
+enum TipoVinculacion {
+  PROFESIONAL
+  APOYO_GESTION
+}
+
+enum EstadoDocumento {
+  BORRADOR
+  EN_REVISION
+  APROBADO
+  RECHAZADO
+}
+
+enum TipoActa {
+  INICIAL
+  PARCIAL
+  FINAL
+}
+
+enum TipoPlantilla {
+  CONTRATO
+  ACTA_INICIAL
+  ACTA_PARCIAL
+  ACTA_FINAL
+  CUENTA_COBRO
+  PARAFISCALES
+}
+
+enum TipoDocumentoAnexo {
+  SEGURIDAD_SOCIAL // planilla PILA (obligatoria)
+  PARAFISCALES     // formato configurable por tenant
+  OTRO             // soportes adicionales (campo abierto)
+}
+
+enum TipoEvidencia {
+  IMAGEN
+  PDF
+  DOC
+  TXT
+  VIDEO
+}
+
+enum AccionRevision {
+  APROBAR
+  RECHAZAR
+}
+
+enum TipoPlanillaPila {
+  I // Independientes
+  Y // Independientes con novedad
+}
+
+// =============================================================================
+// NÚCLEO: TENANT Y USUARIOS
+// =============================================================================
+
+model Tenant {
+  id            String   @id @default(cuid())
+  nombre        String // Alcaldía, Personería, etc.
+  nit           String?  @unique
+  slug          String   @unique
+  // Identidad institucional / config (logo, colores, estándar de redacción IA,
+  // operadores PILA aceptados, obligatoriedad de parafiscales, etc.)
+  config        Json?
+  logoUrl       String?
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  plantillas    Plantilla[]
+  contratos     Contrato[]
+  cuentasCobro  CuentaCobro[]
+  informes      InformeActividades[]
+  actas         Acta[]
+  revisiones    Revision[]
+
+  @@index([slug])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  // tenantId es null SOLO para SUPERADMIN (OSS)
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  email     String
+  nombre    String
+  // Cédula del contratista (precarga cuenta de cobro). Opcional para otros roles.
+  cedula    String?
+  passwordHash String?
+  role      Role
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones según rol
+  contratosCreados    Contrato[]          @relation("ContratosCreador")
+  asignaciones        ContratoContratista[] @relation("AsignacionContratista")
+  contratosSupervisados ContratoContratista[] @relation("ContratoSupervisor")
+  revisionesRealizadas Revision[]         @relation("RevisorUsuario")
+
+  // Email único por tenant (un User por tenant; ver RFC §3)
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+}
+
+// =============================================================================
+// PLANTILLAS (configurables por tenant)
+// =============================================================================
+
+model Plantilla {
+  id        String        @id @default(cuid())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tipo      TipoPlantilla
+  nombre    String
+  // Estructura/cuerpo de la plantilla con marcadores de campos variables.
+  contenido Json
+  version   Int           @default(1)
+  activa    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([tenantId, tipo, activa])
+}
+
+// =============================================================================
+// CONTRATO Y OBLIGACIONES
+// =============================================================================
+
+model Contrato {
+  id              String          @id @default(cuid())
+  tenantId        String
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  objeto          String
+  vigenciaInicio  DateTime
+  vigenciaFin     DateTime
+  valorTotal      Decimal         @db.Decimal(15, 2)
+  valorCuota      Decimal         @db.Decimal(15, 2)
+  numeroCuotas    Int
+  tipoVinculacion TipoVinculacion
+  nivelRiesgoArl  Int?            // 1..5 (ver reglas de negocio)
+
+  creadorId       String
+  creador         User            @relation("ContratosCreador", fields: [creadorId], references: [id])
+
+  obligaciones    ObligacionContrato[]
+  asignaciones    ContratoContratista[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([tenantId])
+}
+
+// Asignación del contrato base a un contratista concreto.
+// Cada asignación lleva su PROPIO número de contrato (diferenciador) y es la
+// unidad real de ejecución (cuentas de cobro, informes y actas cuelgan de aquí).
+model ContratoContratista {
+  id            String   @id @default(cuid())
+  contratoId    String
+  contrato      Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  contratistaId String
+  contratista   User     @relation("AsignacionContratista", fields: [contratistaId], references: [id])
+
+  // Supervisor asignado a esta ejecución (ve informe de supervisión del mes actual)
+  supervisorId  String?
+  supervisor    User?    @relation("ContratoSupervisor", fields: [supervisorId], references: [id])
+
+  // Número de contrato diferenciado por contratista (p. ej. "CPS-2026-045")
+  numeroContrato String
+
+  cuentasCobro  CuentaCobro[]
+  actas         Acta[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([contratoId, numeroContrato])
+  @@index([contratistaId])
+  @@index([supervisorId])
+}
+
+model ObligacionContrato {
+  id         String   @id @default(cuid())
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  // Texto de la obligación tal como aparece en el contrato firmado
+  texto      String
+  orden      Int      @default(0)
+
+  ejecuciones ObligacionEjecutada[]
+  createdAt  DateTime @default(now())
+
+  @@index([contratoId])
+}
+
+// =============================================================================
+// CUENTA DE COBRO (1:1 con cuota)
+// =============================================================================
+
+model CuentaCobro {
+  id                       String              @id @default(cuid())
+  tenantId                 String
+  tenant                   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  asignacionId             String
+  asignacion               ContratoContratista @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+
+  // Correspondencia 1:1 → cuenta N ↔ cuota N
+  numeroCuota              Int
+
+  // Datos ingresados por el contratista
+  plataformaSeguridadSocial String           // operador PILA (ver reglas §3.2)
+  numeroPlanilla           String
+  tipoPlanilla             TipoPlanillaPila?  // opcional (ver reglas §3.3)
+  tipoVinculacion          TipoVinculacion    // confirmado/precargado del contrato
+
+  // Snapshot de datos precargados del contrato (página 1) para trazabilidad
+  nombreContratista        String
+  cedulaContratista        String
+  valorTotalContrato       Decimal            @db.Decimal(15, 2)
+  valorCuota               Decimal            @db.Decimal(15, 2)
+  numeroCuotasContrato     Int
+
+  estado                   EstadoDocumento    @default(BORRADOR)
+
+  firma                    Firma?
+  informe                  InformeActividades?
+  documentosAnexos         DocumentoAnexo[]
+  acta                     Acta?              @relation("ActaParcialCuenta")
+  revisiones               Revision[]
+
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  // Una sola cuenta de cobro por cuota dentro de una asignación
+  @@unique([asignacionId, numeroCuota])
+  @@index([tenantId, estado])
+}
+
+model Firma {
+  id            String      @id @default(cuid())
+  cuentaCobroId String      @unique
+  cuentaCobro   CuentaCobro @relation(fields: [cuentaCobroId], references: [id], onDelete: Cascade)
+
+  // Imagen de la firma (subida o dibujada en canvas → persistida como imagen)
+  blobUrl       String
+  origen        String      // "SUBIDA" | "DIBUJADA"
+  createdAt     DateTime    @default(now())
+}
+
+// =============================================================================
+// INFORME DE ACTIVIDADES Y SUPERVISIÓN
+// =============================================================================
+
+model InformeActividades {
+  id            String      @id @default(cuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  cuentaCobroId String      @unique
+  cuentaCobro   CuentaCobro @relation(fields: [cuentaCobroId], references: [id], onDelete: Cascade)
+
+  estado        EstadoDocumento @default(BORRADOR)
+
+  obligacionesEjecutadas ObligacionEjecutada[]
+  supervision   InformeSupervision?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([tenantId])
+}
+
+model ObligacionEjecutada {
+  id                    String   @id @default(cuid())
+  informeId             String
+  informe               InformeActividades @relation(fields: [informeId], references: [id], onDelete: Cascade)
+
+  obligacionContratoId  String
+  obligacionContrato    ObligacionContrato @relation(fields: [obligacionContratoId], references: [id])
+
+  // Texto base del contratista (puede ser breve)
+  descripcionContratista String
+  // Texto ampliado por IA (5 párrafos × ~8 líneas, configurable por tenant)
+  descripcionAmpliada    String?
+  // Trazabilidad de la generación IA
+  promptVersion          String?
+  modeloIa               String?
+
+  // Evidencias OBLIGATORIAS por cada actividad reportada
+  evidencias            Evidencia[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([informeId])
+}
+
+model Evidencia {
+  id                    String   @id @default(cuid())
+  obligacionEjecutadaId String
+  obligacionEjecutada   ObligacionEjecutada @relation(fields: [obligacionEjecutadaId], references: [id], onDelete: Cascade)
+
+  tipo       TipoEvidencia
+  blobUrl    String
+  nombre     String
+  mimeType   String
+  tamanoBytes Int
+  hash       String?
+  createdAt  DateTime @default(now())
+
+  @@index([obligacionEjecutadaId])
+}
+
+model InformeSupervision {
+  id          String   @id @default(cuid())
+  informeId   String   @unique
+  informe     InformeActividades @relation(fields: [informeId], references: [id], onDelete: Cascade)
+
+  // Texto en 3ª persona generado por IA a partir del informe de actividades
+  contenido   String
+  promptVersion String?
+  modeloIa    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =============================================================================
+// ACTAS
+// =============================================================================
+
+model Acta {
+  id            String              @id @default(cuid())
+  tenantId      String
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  asignacionId  String
+  asignacion    ContratoContratista @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+
+  tipo          TipoActa
+
+  // Acta parcial: vinculada a la cuenta de cobro del mes (opcional para inicial/final)
+  cuentaCobroId String?             @unique
+  cuentaCobro   CuentaCobro?        @relation("ActaParcialCuenta", fields: [cuentaCobroId], references: [id])
+
+  // Campos variables del período (fecha, valor pagado, saldo pendiente, etc.)
+  datos         Json
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([tenantId, tipo])
+  @@index([asignacionId])
+}
+
+// =============================================================================
+// DOCUMENTOS ANEXOS
+// =============================================================================
+
+model DocumentoAnexo {
+  id            String      @id @default(cuid())
+  cuentaCobroId String
+  cuentaCobro   CuentaCobro @relation(fields: [cuentaCobroId], references: [id], onDelete: Cascade)
+
+  tipo        TipoDocumentoAnexo
+  blobUrl     String
+  nombre      String
+  mimeType    String
+  tamanoBytes Int
+  createdAt   DateTime    @default(now())
+
+  @@index([cuentaCobroId, tipo])
+}
+
+// =============================================================================
+// REVISIÓN / APROBACIÓN
+// =============================================================================
+
+model Revision {
+  id            String      @id @default(cuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  cuentaCobroId String
+  cuentaCobro   CuentaCobro @relation(fields: [cuentaCobroId], references: [id], onDelete: Cascade)
+
+  revisorId     String
+  revisor       User        @relation("RevisorUsuario", fields: [revisorId], references: [id])
+
+  accion        AccionRevision
+  // Observaciones OBLIGATORIAS al rechazar (validar en capa de aplicación)
+  observaciones String?
+  notificado    Boolean     @default(false) // correo enviado al contratista
+  createdAt     DateTime    @default(now())
+
+  @@index([tenantId])
+  @@index([cuentaCobroId])
+}
