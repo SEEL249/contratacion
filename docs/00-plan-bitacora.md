@@ -181,13 +181,34 @@
 
 > **El código y la capa de datos están VERIFICADOS de punta a punta.** Lo único que falta para producción depende de credenciales del usuario.
 
+### Sesión 3 — 23/24 de Junio de 2026 — Migración de conexiones a cuentas de `seelbuga@gmail.com`
+
+> Objetivo del usuario: mover GitHub, Vercel y Neon de las cuentas de Cesar (`cesarandreslp` / `cesar-lozanos-projects`) a las cuentas propias de `seelbuga@gmail.com`.
+
+| Actividad | Descripción | Estado | Observaciones |
+|-----------|-------------|--------|--------------|
+| Instalación de CLIs | `vercel` CLI `54.15.1` (npm global) y `gh` `2.95.0` (winget, origen `winget`). | ✅ | `gh` no estaba; winget falló con origen `msstore` → forzado `--source winget`. |
+| Remoto GitHub | `origin` cambiado a `https://github.com/SEEL249/contratacion.git`. | ✅ | Antes apuntaba a `cesarandreslp/contratacion`. |
+| Auth GitHub | Device flow OAuth (`gh` client_id público) con scopes `repo,workflow`. Token clásico/fine-grained fallaron (sin `Contents:write`). | ✅ | curl requirió `--ssl-no-revoke` (schannel CRYPT_E_NO_REVOCATION_CHECK). Credencial vieja de Cesar purgada del Credential Manager. |
+| **Push del código** | `git push origin main` → repo `SEEL249/contratacion` poblado (antes vacío). Upstream y credencial guardados. | ✅ | Workflow `ci.yml` exigió scope `workflow`. |
+| Proyecto Vercel | `vercel link` creó `seel3/contratacion` (`prj_7bFBTZlvJko5hOi0iETdb4iXCoaf`, org `team_9A87BoK6MxheHQcLPep0UbZV` = **SEEL3**). `.vercel` de Cesar eliminado y re-enlazado. | ✅ | Token Vercel `vcp_…` provisto por el usuario. |
+| Vercel ↔ GitHub | El deploy automático del commit `6bf3696` **sí se disparó** (la conexión quedó activa), pero falló en build. | ✅ conexión / ⛔ build |
+| Diagnóstico del build fallido | Log: `Environment variable not found: DATABASE_URL_UNPOOLED` en `prisma migrate deploy`. **No** tenía relación con el autor `cesarandreslp` (eso es solo metadata histórica del commit). | ✅ | Causa real: faltaban variables de entorno. |
+| **Neon vía Vercel Marketplace** | `vercel integration add neon` → base `neon-yellow-cable` provisionada (proyecto Neon `broad-hat-13521514`, host `ep-lucky-breeze-at5cf805`), conectada al proyecto y variables cargadas en los 3 entornos + `.env.local`. | ✅ | Requirió aceptar términos de Neon una vez en el navegador (consentimiento del usuario). |
+| **Deploy de producción** | `vercel deploy --prod` → build corre `prisma migrate deploy` contra Neon nueva (tablas creadas) y app **READY**. URL: https://contratacion-swart.vercel.app | ✅ | |
+| Seed en Neon nueva | `npm run db:seed` (con `DATABASE_URL` cargado de `.env.local`) → tenant `alcaldia-demo` + superadmin + usuarios por rol. Pwd demo `Demo1234*`. | ✅ | |
+| `AUTH_SECRET` | Generada (`crypto.randomBytes(32)`) y cargada en los 3 entornos + `.env.local`; redeploy. | ✅ | Requisito de Auth.js en producción. |
+| **Verificación de login E2E** | POST a `/api/auth/callback/credentials` con `email + password + tenantSlug=alcaldia-demo` → `302 → /dashboard` + cookie de sesión. | ✅ | El login exige `tenantSlug` (cada entidad su espacio). |
+
 ### Próximos pasos (requieren acción del usuario)
 
-- [ ] **Push a GitHub `SEEL249`:** generar Personal Access Token y `git remote add origin … && git push -u origin main` (o dármelo para hacerlo).
-- [ ] **Conectar Neon:** poner `DATABASE_URL` en `.env.local` → `npx prisma migrate deploy` → `npm run db:seed`.
-- [ ] **Vercel:** configurar variables (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `GROK_API_KEY`, `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `MAIL_FROM`) y desplegar desde el repo real.
+- [x] ~~**Push a GitHub `SEEL249`**~~ ✅ (device flow, scopes `repo,workflow`).
+- [x] ~~**Crear proyecto en Vercel (cuenta propia)**~~ ✅ `seel3/contratacion`.
+- [x] ~~**Conectar Neon (cuenta de seelbuga)**~~ ✅ provisionada por Vercel Marketplace, migrada y con seed.
+- [x] ~~**Deploy en producción**~~ ✅ https://contratacion-swart.vercel.app (login verificado).
+- [ ] **Variables de funciones opcionales en Vercel:** `GROK_API_KEY` (IA), `BLOB_READ_WRITE_TOKEN` (subida de archivos), `RESEND_API_KEY` + `MAIL_FROM` (correos). Sin ellas, esas funciones específicas no operan; el resto sí. Requieren claves propias del usuario.
 - [ ] **Validar con PO (Cesar):** naturaleza del "documento de parafiscales" + tarifas/IBC vigentes.
-- [ ] 🔐 **Rotar contraseñas de Neon y GitHub compartidas en el chat.**
+- [ ] 🔐 **Rotar credenciales compartidas en el chat:** token Vercel `vcp_…` y los PATs de GitHub `github_pat_…`. La sesión final de GitHub quedó por device flow (token OAuth, no compartido). La password de Neon de Cesar ya no se usa (BD nueva).
 
 ---
 
