@@ -277,3 +277,17 @@
 | Acciones por entidad | `obtenerTenant`, `actualizarVencimiento`, `cambiarEstadoTenant` (suspender/reactivar), `vaciarDatosTenant` (borra contratos+plantillas en cascada, conserva entidad y usuarios), `eliminarTenant` (cascada total). | ✅ |
 | Pantalla de detalle | `/superadmin/tenants/[id]`: info + conteos, fijar vencimiento, suspender/reactivar, vaciar BD y eliminar (con confirmaciones). Lista con estado/vence/“Ver detalle”. | ✅ |
 | Verificación | typecheck OK; tests 51/51 (nuevos 5 de estado de mora); detalle en prod → 200 con todas las acciones. Deploy `79ff6b5`. | ✅ |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Planes de suscripción, renovación y aviso de vencimiento
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Planes | `Tenant.plan` (MENSUAL/TRIMESTRAL/SEMESTRAL/ANUAL) + migración `20260624020000_tenant_plan` (backfill vencimiento = creación + 1 mes). | ✅ |
+| Cálculo de vencimiento | `lib/tenants/plan.ts`: periodos, `calcularVencimiento(base, plan)`, `diasParaVencer`. Alta fija vencimiento = creación + periodo; `cambiarPlan` recalcula. | ✅ |
+| Suspensión por mora | Automática: cuando el vencimiento pasa, la entidad queda EN_MORA y el login se bloquea (vía `estado.ts` + `auth.ts`). | ✅ |
+| Renovación / reactivación | `registrarPago(id)`: renueva un periodo del plan y **reactiva** la entidad. Botón en el detalle; pensado para invocarse también desde un webhook de pasarela/banco (reconciliación automática). | ✅ (mecanismo) |
+| Aviso 10 días | `AvisoVencimiento` (modal) mostrado al iniciar el aplicativo a usuarios de la entidad cuando faltan ≤10 días; una vez por sesión. `layout.tsx` calcula los días. | ✅ |
+| UI | Detalle con plan, días restantes, cambiar plan y registrar pago; lista con columna Plan/estado/vence. | ✅ |
+| Verificación | typecheck OK; **55/55 tests** (4 nuevos de plan); detalle prod 200 con plan y acciones. Deploy `9b821d1`. | ✅ |
+
+> Pendiente real para reconciliación 100% automática del pago: integrar pasarela/banco (webhook) que llame a `registrarPago`. Hoy el disparador es el botón del superadmin.
