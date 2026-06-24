@@ -241,3 +241,10 @@
 | Módulo `plantillas` | `modules/plantillas/actions.ts`: listar, cargar por defecto (`PLANTILLAS_DEFAULT`), activar/desactivar. | ✅ |
 | Pantalla Plantillas | `app/plantillas/` (page + cliente): tabla por tipo/versión/estado + botón "Cargar por defecto" cuando está vacía. | ✅ |
 | Verificación prod | Como ADMIN_TENANT: `/dashboard`, `/usuarios`, `/plantillas`, `/contratos` → 200. Deploy `efd7e7b`. Todas las rutas del panel resueltas. | ✅ |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Fix "Application error" en login
+
+| Hallazgo | Detalle | Fix |
+|----------|---------|-----|
+| `POST /login → 500 [auth][error] Credentials` | El server action del login no capturaba el `AuthError` de Auth.js cuando las credenciales fallaban (típico: usuario de entidad sin `tenantSlug`) → excepción server-side genérica ("Application error"). | `login/page.tsx`: `try/catch` sobre `signIn`; `AuthError`→`redirect("/login?error=1")` con mensaje claro; re-lanza `NEXT_REDIRECT` en éxito. Deploy `e4be0e6`. |
+| URL de deployment con protección | El usuario navegaba a `…-fkc3o81mm-seel3.vercel.app` (deployment directo, 401 por Deployment Protection) en vez del alias `contratacion-swart.vercel.app` (200). | Usar siempre el alias de producción. |
