@@ -28,13 +28,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
+  if (!body.tenantId && !body.slug) {
+    return NextResponse.json({ error: "Falta tenantId o slug" }, { status: 400 });
+  }
+
   let tenantId = body.tenantId;
   if (!tenantId && body.slug) {
     const t = await prisma.tenant.findUnique({ where: { slug: body.slug }, select: { id: true } });
     tenantId = t?.id;
   }
   if (!tenantId) {
-    return NextResponse.json({ error: "Falta tenantId o slug" }, { status: 400 });
+    return NextResponse.json({ error: "Entidad no encontrada" }, { status: 404 });
   }
 
   const res = await renovarSuscripcion(tenantId);
