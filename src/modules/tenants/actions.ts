@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
 import { calcularVencimiento, type Plan, PLANES } from "@/lib/tenants/plan";
+import { renovarSuscripcion } from "@/lib/tenants/billing";
 import { crearTenantInput, type CrearTenantInput } from "./schema";
 
 // Server Actions de gestión de entidades (tenants). Solo SUPERADMIN.
@@ -157,21 +158,8 @@ export async function cambiarPlan(id: string, plan: string): Promise<ActionResul
  */
 export async function registrarPago(id: string): Promise<ActionResult> {
   await requireSuperadmin();
-  const t = await prisma.tenant.findUnique({
-    where: { id },
-    select: { plan: true, fechaVencimiento: true },
-  });
-  if (!t) return { ok: false, error: "Entidad no encontrada." };
-
-  const ahora = new Date();
-  const base = t.fechaVencimiento && t.fechaVencimiento > ahora ? t.fechaVencimiento : ahora;
-  await prisma.tenant.update({
-    where: { id },
-    data: {
-      activo: true, // reactivación automática
-      fechaVencimiento: calcularVencimiento(base, t.plan as Plan),
-    },
-  });
+  const res = await renovarSuscripcion(id);
+  if (!res.ok) return { ok: false, error: res.error };
   revalidatePath(`/superadmin/tenants/${id}`);
   revalidatePath("/superadmin/tenants");
   return { ok: true };
