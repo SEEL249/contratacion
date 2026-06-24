@@ -267,3 +267,13 @@
 | Auditoría E2E de navegación (prod) | Login real + acceso por los 5 roles a todas sus pantallas → **todo 200**. |
 | Datos demo | `scripts/seed-demo-contrato.ts` (idempotente): contrato demo + obligaciones + asignación `CPS-2026-001` (contratista+supervisor) en `alcaldia-demo`. Visible en `/contratos` y en `/cuentas-cobro/nueva`. |
 | Pendiente E2E interactivo | Requiere extensión Claude-in-Chrome conectada (no hay) o click-through manual. IA de Groq pendiente de `GROK_API_KEY`. |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Superadmin: detalle, mora, vaciar y eliminar entidad
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Campo `fechaVencimiento` | Añadido a `Tenant` + migración `20260624010000_tenant_vencimiento` (aplicada en build de Vercel). | ✅ |
+| Suspensión automática por mora | `lib/tenants/estado.ts` (ACTIVA/SUSPENDIDA/EN_MORA, puro) + bloqueo en `auth.ts`: si la entidad está en mora o suspendida, sus usuarios no pueden iniciar sesión. | ✅ |
+| Acciones por entidad | `obtenerTenant`, `actualizarVencimiento`, `cambiarEstadoTenant` (suspender/reactivar), `vaciarDatosTenant` (borra contratos+plantillas en cascada, conserva entidad y usuarios), `eliminarTenant` (cascada total). | ✅ |
+| Pantalla de detalle | `/superadmin/tenants/[id]`: info + conteos, fijar vencimiento, suspender/reactivar, vaciar BD y eliminar (con confirmaciones). Lista con estado/vence/“Ver detalle”. | ✅ |
+| Verificación | typecheck OK; tests 51/51 (nuevos 5 de estado de mora); detalle en prod → 200 con todas las acciones. Deploy `79ff6b5`. | ✅ |
