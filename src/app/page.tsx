@@ -40,86 +40,88 @@ export default async function HomePage() {
   const session = await auth();
 
   return (
-    <div className="landing">
-      <header className="nav">
-        <div className="brand">
-          <span className="logo" aria-hidden>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4Z" />
-            </svg>
-          </span>
-          <span>
-            Contratación <small>· OSS</small>
-          </span>
-        </div>
-        <nav>
-          {session?.user ? (
-            <Link className="btn btn-ghost" href="/dashboard">
-              Ir al panel
-            </Link>
-          ) : (
-            <Link className="btn btn-ghost" href="/login">
-              Iniciar sesión
-            </Link>
-          )}
-        </nav>
-      </header>
-
-      <section className="hero">
-        <span className="badge">
-          <span className="dot" /> Plataforma multi-tenant · Sector público
-        </span>
-        <h1 className="hero-title">
-          Gestión integral de <span className="grad">contratistas</span> del sector público
-        </h1>
-        <p className="hero-sub">
-          Del contrato a la cuenta de cobro en un solo flujo: informes asistidos por IA,
-          supervisión, actas y aprobaciones, con aislamiento por entidad y trazabilidad completa.
-        </p>
-        <div className="hero-actions">
-          {session?.user ? (
-            <Link className="btn btn-primary" href="/dashboard">
-              Ir al panel →
-            </Link>
-          ) : (
-            <Link className="btn btn-primary" href="/login">
-              Iniciar sesión →
-            </Link>
-          )}
-          <a className="btn btn-ghost" href="#modulos">
-            Conocer los módulos
-          </a>
-        </div>
-        {session?.user && (
-          <p className="session-note">
-            Sesión activa como <b>{session.user.name}</b> · {session.user.role}
-          </p>
-        )}
-      </section>
-
-      <div className="section-head" id="modulos">
-        <h2>Todo el ciclo de contratación en un lugar</h2>
-        <p>Diseñado para entidades públicas: cumplimiento, control de roles y evidencia en cada paso.</p>
-      </div>
-
-      <section className="features">
-        {features.map((f) => (
-          <article key={f.title} className="card feature">
-            <span className="ic" aria-hidden>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                {f.icon}
+    <div className="home">
+      <div className="wrap">
+        <header className="nav">
+          <div className="brand">
+            <span className="logo" aria-hidden>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4Z" />
               </svg>
             </span>
-            <h3>{f.title}</h3>
-            <p>{f.desc}</p>
-          </article>
-        ))}
-      </section>
+            <span>
+              Contratación <small>· OSS</small>
+            </span>
+          </div>
+          <nav>
+            {session?.user ? (
+              <Link className="btn btn-ghost" href="/dashboard">
+                Ir al panel
+              </Link>
+            ) : (
+              <Link className="btn btn-ghost" href="/login">
+                Iniciar sesión
+              </Link>
+            )}
+          </nav>
+        </header>
+      </div>
 
-      <footer className="footer">
-        <span>© {new Date().getFullYear()} Open Source Solutions (OSS)</span>
-        <span>Plataforma de gestión de contratos del sector público</span>
-      </footer>
+      <div className="wrap">
+        <section className="hero-banner">
+          <h1 className="sr-only">Gestión Integral de Contratistas del Sector Público</h1>
+          <img
+            className="hero-img"
+            src="/hero-bg.png"
+            alt="Gestión Integral de Contratistas del Sector Público — selección, contratación, seguimiento, evaluación y resultados."
+          />
+          <div className="hero-cta">
+            {session?.user ? (
+              <Link className="btn btn-primary" href="/dashboard">
+                Ir al panel →
+              </Link>
+            ) : (
+              <Link className="btn btn-primary" href="/login">
+                Iniciar sesión →
+              </Link>
+            )}
+            <a className="btn btn-ghost" href="#modulos">
+              Conocer los módulos
+            </a>
+          </div>
+          {session?.user && (
+            <p className="session-note">
+              Sesión activa como <b>{session.user.name}</b> · {session.user.role}
+            </p>
+          )}
+        </section>
+      </div>
+
+      <div className="wrap">
+        <div className="section-head" id="modulos">
+          <h2>Todo el ciclo de contratación en un lugar</h2>
+          <p>Diseñado para entidades públicas: cumplimiento, control de roles y evidencia en cada paso.</p>
+        </div>
+
+        <section className="features">
+          {features.map((f) => (
+            <article key={f.title} className="feature">
+              <span className="ic" aria-hidden>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {f.icon}
+                </svg>
+              </span>
+              <h3>{f.title}</h3>
+              <p>{f.desc}</p>
+            </article>
+          ))}
+        </section>
+
+        <footer className="footer">
+          <span>© {new Date().getFullYear()} Open Source Solutions (OSS)</span>
+          <span>Plataforma de gestión de contratos del sector público</span>
+        </footer>
+      </div>
     </div>
   );
 }

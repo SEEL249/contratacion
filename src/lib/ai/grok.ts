@@ -1,4 +1,7 @@
-// Servicio de IA (Grok / xAI). Único punto de contacto con la API.
+// Servicio de IA. Único punto de contacto con la API (formato OpenAI estándar).
+// Compatible con xAI (Grok) y Groq: solo cambian GROK_API_BASE_URL / GROK_MODEL.
+//   - xAI:  GROK_API_BASE_URL=https://api.x.ai/v1        GROK_MODEL=grok-2-latest
+//   - Groq: GROK_API_BASE_URL=https://api.groq.com/openai/v1  GROK_MODEL=llama-3.3-70b-versatile
 // La capa de dominio NUNCA llama a la API directamente. Ver docs/02-prompts-grok.md.
 
 import {
