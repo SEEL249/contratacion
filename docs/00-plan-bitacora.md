@@ -219,3 +219,14 @@
 - [02 — Prompts de Grok](02-prompts-grok.md)
 - [03 — RFC de arquitectura](03-rfc-arquitectura.md)
 - [`prisma/schema.prisma`](../prisma/schema.prisma) — fuente de verdad del modelo de datos
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Pantalla SUPERADMIN "Gestionar entidades" + panel
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Bug 404 "Gestionar entidades" | El dashboard del SUPERADMIN enlazaba a `/superadmin/tenants`, ruta permitida por el middleware pero **sin página creada** → 404. | ✅ resuelto |
+| Módulo `tenants` | `src/modules/tenants/{schema,actions}.ts`: `listarTenants`, `crearTenant` (+ primer ADMIN_TENANT), `cambiarEstadoTenant`. Solo SUPERADMIN, Prisma crudo (tabla global). | ✅ |
+| Pantalla de entidades | `src/app/superadmin/tenants/page.tsx` + `nueva-entidad.tsx`: tabla de entidades (usuarios/contratos/estado) + alta con su administrador. | ✅ |
+| Panel rediseñado | `dashboard/page.tsx`: topbar con marca + cerrar sesión, tarjetas de acceso por rol con íconos y descripciones. | ✅ |
+| Estilos app-shell | `globals.css`: topbar, tiles, tablas, formularios, pills de estado. | ✅ |
+| Verificación prod | sin sesión `/superadmin/tenants`→307 login; como superadmin→200. Deploy `11ababf`. | ✅ |
