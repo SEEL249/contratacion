@@ -30,8 +30,11 @@ export default auth((req) => {
   return NextResponse.next();
 });
 
-// Excluye estáticos y TODAS las rutas /api (los route handlers validan su propia
-// auth y devuelven 401 JSON, en vez de redirigir a HTML).
+// Excluye estáticos (incl. archivos de /public como imágenes) y TODAS las rutas
+// /api (los route handlers validan su propia auth y devuelven 401 JSON, en vez de
+// redirigir a HTML).
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|gif|svg|webp|avif|ico|txt|xml|woff2?|ttf|css|js)).*)",
+  ],
 };
