@@ -258,3 +258,12 @@
 | Páginas unificadas | login (con marca), dashboard (tiles), superadmin/usuarios/plantillas (tablas), contratos, cuentas de cobro (pills de estado), revisiones y supervisión (tarjetas) + migas de pan. | ✅ |
 | Limpieza | `.claude/` removido del control de versiones y añadido a `.gitignore`. | ✅ |
 | Verificación | `/` y `/login` → 200; login con marca; páginas internas con encabezado institucional + rol + logout. Deploy `a221118`. | ✅ |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — QA: tests + auditoría de navegación + datos demo
+
+| Actividad | Resultado |
+|-----------|-----------|
+| Suite de tests | **46/46 pasan** tras el rediseño (sin regresiones). |
+| Auditoría E2E de navegación (prod) | Login real + acceso por los 5 roles a todas sus pantallas → **todo 200**. |
+| Datos demo | `scripts/seed-demo-contrato.ts` (idempotente): contrato demo + obligaciones + asignación `CPS-2026-001` (contratista+supervisor) en `alcaldia-demo`. Visible en `/contratos` y en `/cuentas-cobro/nueva`. |
+| Pendiente E2E interactivo | Requiere extensión Claude-in-Chrome conectada (no hay) o click-through manual. IA de Groq pendiente de `GROK_API_KEY`. |
