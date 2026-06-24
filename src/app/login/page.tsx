@@ -17,23 +17,29 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <h1>Iniciar sesión</h1>
-      <form action={login} style={{ display: "grid", gap: "0.75rem", maxWidth: 360 }}>
-        <label>
-          Entidad (slug)
-          <input name="tenantSlug" placeholder="alcaldia-demo" />
-        </label>
-        <label>
-          Correo
-          <input name="email" type="email" required />
-        </label>
-        <label>
-          Contraseña
-          <input name="password" type="password" required />
-        </label>
-        <button type="submit">Entrar</button>
-      </form>
+    <main className="auth-wrap">
+      <div className="card auth-card">
+        <h1>Iniciar sesión</h1>
+        <p className="sub">Accede al espacio de tu entidad.</p>
+        <form action={login} className="auth-form">
+          <label>
+            Entidad (slug)
+            <input name="tenantSlug" placeholder="alcaldia-demo" />
+          </label>
+          <label>
+            Correo
+            <input name="email" type="email" placeholder="usuario@entidad.co" required />
+          </label>
+          <label>
+            Contraseña
+            <input name="password" type="password" placeholder="••••••••" required />
+          </label>
+          <button type="submit">Entrar</button>
+        </form>
+        <p className="auth-hint">
+          Deja la entidad vacía solo si eres superadministrador de la plataforma.
+        </p>
+      </div>
     </main>
   );
 }
