@@ -230,3 +230,14 @@
 | Panel rediseñado | `dashboard/page.tsx`: topbar con marca + cerrar sesión, tarjetas de acceso por rol con íconos y descripciones. | ✅ |
 | Estilos app-shell | `globals.css`: topbar, tiles, tablas, formularios, pills de estado. | ✅ |
 | Verificación prod | sin sesión `/superadmin/tenants`→307 login; como superadmin→200. Deploy `11ababf`. | ✅ |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Pantallas Admin de entidad (Usuarios y Plantillas)
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Auditoría de rutas del panel | Cruce de enlaces del dashboard vs páginas existentes: faltaban `/usuarios` y `/plantillas` (404 latentes del ADMIN_TENANT). | ✅ |
+| Módulo `usuarios` | `modules/usuarios/{schema,actions}.ts`: listar/crear/activar usuarios de la entidad (tenant-scoped, permiso `tenant:configure`, P2002→error amigable). | ✅ |
+| Pantalla Usuarios | `app/usuarios/` (page + cliente): tabla con rol/estado + alta con selección de rol y toggle activo/inactivo. | ✅ |
+| Módulo `plantillas` | `modules/plantillas/actions.ts`: listar, cargar por defecto (`PLANTILLAS_DEFAULT`), activar/desactivar. | ✅ |
+| Pantalla Plantillas | `app/plantillas/` (page + cliente): tabla por tipo/versión/estado + botón "Cargar por defecto" cuando está vacía. | ✅ |
+| Verificación prod | Como ADMIN_TENANT: `/dashboard`, `/usuarios`, `/plantillas`, `/contratos` → 200. Deploy `efd7e7b`. Todas las rutas del panel resueltas. | ✅ |
