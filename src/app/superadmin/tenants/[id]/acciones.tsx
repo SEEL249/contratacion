@@ -4,49 +4,67 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   cambiarEstadoTenant,
-  actualizarVencimiento,
+  cambiarPlan,
+  registrarPago,
   vaciarDatosTenant,
   eliminarTenant,
 } from "@/modules/tenants/actions";
 
-export function VencimientoForm({
-  id,
-  valor,
-}: {
-  id: string;
-  valor: string; // yyyy-mm-dd o ""
-}) {
+export function PlanYPago({ id, plan }: { id: string; plan: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
 
-  function guardar(e: React.FormEvent<HTMLFormElement>) {
+  function guardarPlan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const fecha = String(fd.get("fecha") ?? "");
+    const nuevo = String(fd.get("plan") ?? plan);
     setMsg(null);
     startTransition(async () => {
-      const res = await actualizarVencimiento(id, fecha || null);
-      setMsg(res.ok ? "Guardado." : res.error);
+      const res = await cambiarPlan(id, nuevo);
+      setMsg(res.ok ? "Plan actualizado; vencimiento recalculado." : res.error);
+      router.refresh();
+    });
+  }
+
+  function pagar() {
+    if (!window.confirm("¿Registrar un pago? Renueva el servicio un periodo del plan y reactiva la entidad.")) return;
+    setMsg(null);
+    startTransition(async () => {
+      const res = await registrarPago(id);
+      setMsg(res.ok ? "Pago registrado: servicio renovado y entidad reactivada." : res.error);
       router.refresh();
     });
   }
 
   return (
-    <form onSubmit={guardar} className="form-card">
-      <label>
-        Fecha de vencimiento del servicio
-        <input type="date" name="fecha" defaultValue={valor} />
-      </label>
-      <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.5rem 0 1rem" }}>
-        Si la fecha pasa, la entidad queda <b>en mora</b> y sus usuarios no podrán iniciar sesión
-        (suspensión automática). Deja el campo vacío para no tener vencimiento.
-      </p>
-      <button type="submit" disabled={pending}>
-        {pending ? "Guardando…" : "Guardar vencimiento"}
-      </button>
-      {msg && <span style={{ marginLeft: "0.75rem", color: "var(--muted)" }}>{msg}</span>}
-    </form>
+    <div className="form-card">
+      {msg && <div className="alert ok">{msg}</div>}
+      <form onSubmit={guardarPlan}>
+        <label>
+          Plan de suscripción
+          <select name="plan" defaultValue={plan}>
+            <option value="MENSUAL">Mensual</option>
+            <option value="TRIMESTRAL">Trimestral</option>
+            <option value="SEMESTRAL">Semestral</option>
+            <option value="ANUAL">Anual</option>
+          </select>
+        </label>
+        <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.5rem 0 1rem" }}>
+          El vencimiento se calcula a partir de la fecha de creación según el plan. Al cambiar el
+          plan se recalcula. Cuando el vencimiento pasa, la entidad entra en <b>mora</b> y se
+          suspende automáticamente.
+        </p>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button type="submit" disabled={pending}>
+            {pending ? "Guardando…" : "Guardar plan"}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={pagar} disabled={pending}>
+            Registrar pago (renovar)
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

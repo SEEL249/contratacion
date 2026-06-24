@@ -24,6 +24,7 @@ export function NuevaEntidad() {
         nombre: String(fd.get("nombre") ?? ""),
         slug: String(fd.get("slug") ?? ""),
         nit: String(fd.get("nit") ?? ""),
+        plan: String(fd.get("plan") ?? "MENSUAL") as "MENSUAL" | "TRIMESTRAL" | "SEMESTRAL" | "ANUAL",
         adminNombre: String(fd.get("adminNombre") ?? ""),
         adminEmail: String(fd.get("adminEmail") ?? ""),
         adminPassword: String(fd.get("adminPassword") ?? ""),
@@ -55,6 +56,15 @@ export function NuevaEntidad() {
         <label>
           NIT (opcional)
           <input name="nit" placeholder="900123456-7" />
+        </label>
+        <label>
+          Plan de suscripción
+          <select name="plan" defaultValue="MENSUAL">
+            <option value="MENSUAL">Mensual</option>
+            <option value="TRIMESTRAL">Trimestral</option>
+            <option value="SEMESTRAL">Semestral</option>
+            <option value="ANUAL">Anual</option>
+          </select>
         </label>
         <label>
           Nombre del administrador

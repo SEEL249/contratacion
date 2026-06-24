@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { listarTenants } from "@/modules/tenants/actions";
 import { estadoTenant, ESTADO_LABEL, ESTADO_PILL } from "@/lib/tenants/estado";
+import { PLAN_LABEL, type Plan } from "@/lib/tenants/plan";
 import { NuevaEntidad } from "./nueva-entidad";
 
 // Pantalla SUPERADMIN: gestión de entidades (tenants). Lista las entidades
@@ -50,6 +51,7 @@ export default async function GestionEntidadesPage() {
               <tr>
                 <th>Entidad</th>
                 <th>Identificador</th>
+                <th>Plan</th>
                 <th>Usuarios</th>
                 <th>Contratos</th>
                 <th>Estado</th>
@@ -66,6 +68,7 @@ export default async function GestionEntidadesPage() {
                     <td>
                       <span className="mono">{t.slug}</span>
                     </td>
+                    <td>{PLAN_LABEL[t.plan as Plan]}</td>
                     <td>{t._count.users}</td>
                     <td>{t._count.contratos}</td>
                     <td>

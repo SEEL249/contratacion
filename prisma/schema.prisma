@@ -79,6 +79,13 @@ enum TipoPlanillaPila {
   Y // Independientes con novedad
 }
 
+enum PlanSuscripcion {
+  MENSUAL
+  TRIMESTRAL
+  SEMESTRAL
+  ANUAL
+}
+
 // =============================================================================
 // NÚCLEO: TENANT Y USUARIOS
 // =============================================================================
@@ -93,8 +100,11 @@ model Tenant {
   config        Json?
   logoUrl       String?
   activo        Boolean  @default(true)
+  // Plan de suscripción: define el periodo de facturación/vencimiento.
+  plan          PlanSuscripcion @default(MENSUAL)
   // Fecha de vencimiento del servicio/suscripción. Si pasa, la entidad queda
   // "en mora" y se bloquea el acceso de sus usuarios (suspensión automática).
+  // Se calcula a partir de la creación + periodo del plan, y se renueva al pagar.
   fechaVencimiento DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

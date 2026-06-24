@@ -643,3 +643,50 @@ table.data tbody tr:hover td {
   color: var(--muted-2);
   font-size: 0.82rem;
 }
+
+/* ---------- Modal (aviso emergente) ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(15, 39, 71, 0.45);
+  backdrop-filter: blur(3px);
+}
+.modal {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.75rem;
+  box-shadow: 0 30px 70px -20px rgba(15, 39, 71, 0.5);
+  text-align: center;
+}
+.modal-ic {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 0.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+}
+.modal h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+.modal p {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.modal-actions {
+  display: flex;
+  justify-content: center;
+}

@@ -3,15 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { obtenerTenant } from "@/modules/tenants/actions";
 import { estadoTenant, ESTADO_LABEL, ESTADO_PILL } from "@/lib/tenants/estado";
-import { VencimientoForm, AccionesTenant } from "./acciones";
+import { PLAN_LABEL, diasParaVencer, type Plan } from "@/lib/tenants/plan";
+import { PlanYPago, AccionesTenant } from "./acciones";
 
 export const dynamic = "force-dynamic";
 
 function fecha(d: Date | null) {
   return d ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(d) : "—";
-}
-function toInputDate(d: Date | null) {
-  return d ? new Date(d).toISOString().slice(0, 10) : "";
 }
 
 export default async function TenantDetallePage({
@@ -31,6 +29,7 @@ export default async function TenantDetallePage({
   if (!tenant) notFound();
 
   const estado = estadoTenant(tenant);
+  const dias = diasParaVencer(tenant.fechaVencimiento);
 
   return (
     <main>
@@ -57,6 +56,10 @@ export default async function TenantDetallePage({
               <td>{tenant.nit ?? "—"}</td>
             </tr>
             <tr>
+              <th>Plan</th>
+              <td>{PLAN_LABEL[tenant.plan as Plan]}</td>
+            </tr>
+            <tr>
               <th>Estado</th>
               <td>
                 <span className={ESTADO_PILL[estado]}>{ESTADO_LABEL[estado]}</span>
@@ -64,7 +67,14 @@ export default async function TenantDetallePage({
             </tr>
             <tr>
               <th>Vence</th>
-              <td>{fecha(tenant.fechaVencimiento)}</td>
+              <td>
+                {fecha(tenant.fechaVencimiento)}
+                {dias !== null && (
+                  <span style={{ color: "var(--muted)", marginLeft: "0.5rem" }}>
+                    ({dias < 0 ? `vencido hace ${-dias} día(s)` : `en ${dias} día(s)`})
+                  </span>
+                )}
+              </td>
             </tr>
             <tr>
               <th>Usuarios</th>
@@ -94,8 +104,8 @@ export default async function TenantDetallePage({
         </table>
       </div>
 
-      <div className="section-sep">Vencimiento y mora</div>
-      <VencimientoForm id={tenant.id} valor={toInputDate(tenant.fechaVencimiento)} />
+      <div className="section-sep">Plan y pagos</div>
+      <PlanYPago id={tenant.id} plan={tenant.plan} />
 
       <div className="section-sep">Acciones</div>
       <AccionesTenant id={tenant.id} nombre={tenant.nombre} slug={tenant.slug} activo={tenant.activo} />

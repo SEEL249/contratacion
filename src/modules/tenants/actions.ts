@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
+import { calcularVencimiento, type Plan, PLANES } from "@/lib/tenants/plan";
 import { crearTenantInput, type CrearTenantInput } from "./schema";
 
 // Server Actions de gestión de entidades (tenants). Solo SUPERADMIN.
@@ -18,6 +19,7 @@ const TENANT_SELECT = {
   slug: true,
   nit: true,
   activo: true,
+  plan: true,
   fechaVencimiento: true,
   createdAt: true,
   _count: { select: { users: true, contratos: true } },
@@ -115,6 +117,9 @@ export async function crearTenant(input: CrearTenantInput): Promise<ActionResult
       nombre: data.nombre,
       slug: data.slug,
       nit,
+      plan: data.plan,
+      // Vencimiento inicial = creación + periodo del plan.
+      fechaVencimiento: calcularVencimiento(new Date(), data.plan),
       users: {
         create: {
           email: data.adminEmail.toLowerCase(),
@@ -126,6 +131,48 @@ export async function crearTenant(input: CrearTenantInput): Promise<ActionResult
     },
   });
 
+  revalidatePath("/superadmin/tenants");
+  return { ok: true };
+}
+
+/** Cambia el plan y recalcula el vencimiento a partir de la fecha de creación. */
+export async function cambiarPlan(id: string, plan: string): Promise<ActionResult> {
+  await requireSuperadmin();
+  if (!(PLANES as string[]).includes(plan)) return { ok: false, error: "Plan inválido." };
+  const t = await prisma.tenant.findUnique({ where: { id }, select: { createdAt: true } });
+  if (!t) return { ok: false, error: "Entidad no encontrada." };
+  await prisma.tenant.update({
+    where: { id },
+    data: { plan: plan as Plan, fechaVencimiento: calcularVencimiento(t.createdAt, plan as Plan) },
+  });
+  revalidatePath(`/superadmin/tenants/${id}`);
+  revalidatePath("/superadmin/tenants");
+  return { ok: true };
+}
+
+/**
+ * Registra un pago: renueva el servicio un periodo del plan y reactiva la entidad.
+ * Es el punto que dispararía la reactivación automática cuando el pago se refleja
+ * (botón del superadmin hoy; puede invocarse desde un webhook de la pasarela/banco).
+ */
+export async function registrarPago(id: string): Promise<ActionResult> {
+  await requireSuperadmin();
+  const t = await prisma.tenant.findUnique({
+    where: { id },
+    select: { plan: true, fechaVencimiento: true },
+  });
+  if (!t) return { ok: false, error: "Entidad no encontrada." };
+
+  const ahora = new Date();
+  const base = t.fechaVencimiento && t.fechaVencimiento > ahora ? t.fechaVencimiento : ahora;
+  await prisma.tenant.update({
+    where: { id },
+    data: {
+      activo: true, // reactivación automática
+      fechaVencimiento: calcularVencimiento(base, t.plan as Plan),
+    },
+  });
+  revalidatePath(`/superadmin/tenants/${id}`);
   revalidatePath("/superadmin/tenants");
   return { ok: true };
 }
