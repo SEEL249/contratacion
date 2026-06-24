@@ -1,5 +1,7 @@
 import { auth } from "./auth";
 import { forTenant } from "@/lib/db/tenant-scope";
+import { prisma } from "@/lib/db/prisma";
+import { tenantBloqueado } from "@/lib/tenants/estado";
 import { assertCan, type Permission } from "./permissions";
 import type { Role } from "@prisma/client";
 
@@ -16,6 +18,17 @@ export interface SessionContext {
 export async function requireSession(): Promise<SessionContext> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("No autenticado");
+
+  // Suspensión por mora/inactividad: bloquea también las sesiones ya activas
+  // (no solo nuevos logins). El superadmin (tenantId null) no se ve afectado.
+  if (session.user.tenantId) {
+    const t = await prisma.tenant.findUnique({
+      where: { id: session.user.tenantId },
+      select: { activo: true, fechaVencimiento: true },
+    });
+    if (!t || tenantBloqueado(t)) throw new Error("Entidad suspendida o en mora");
+  }
+
   return {
     userId: session.user.id,
     tenantId: session.user.tenantId,

@@ -291,3 +291,12 @@
 | Verificación | typecheck OK; **55/55 tests** (4 nuevos de plan); detalle prod 200 con plan y acciones. Deploy `9b821d1`. | ✅ |
 
 > Pendiente real para reconciliación 100% automática del pago: integrar pasarela/banco (webhook) que llame a `registrarPago`. Hoy el disparador es el botón del superadmin.
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Webhook de pagos + bloqueo de sesión activa por mora
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Lógica de renovación compartida | `lib/tenants/billing.renovarSuscripcion` (sin auth): avanza el vencimiento un periodo y reactiva. La reutilizan `registrarPago` (superadmin) y el webhook. | ✅ |
+| Webhook de pagos | `POST /api/webhooks/pago` protegido por `PAGOS_WEBHOOK_SECRET` (header `x-webhook-secret`); body `{tenantId}` o `{slug}` → renueva + reactiva. Verificado: 401 sin/bad secret, rechaza tenant inexistente. | ✅ |
+| Bloqueo de sesión activa | `requireSession` ahora verifica el estado del tenant: si está suspendido o en mora, lanza y la página/acción redirige a /login (antes solo se bloqueaba el nuevo login). | ✅ |
+| Verificación | typecheck OK; 55/55 tests; deploy `d06bafb` + este. | ✅ |
