@@ -248,3 +248,13 @@
 |----------|---------|-----|
 | `POST /login → 500 [auth][error] Credentials` | El server action del login no capturaba el `AuthError` de Auth.js cuando las credenciales fallaban (típico: usuario de entidad sin `tenantSlug`) → excepción server-side genérica ("Application error"). | `login/page.tsx`: `try/catch` sobre `signIn`; `AuthError`→`redirect("/login?error=1")` con mensaje claro; re-lanza `NEXT_REDIRECT` en éxito. Deploy `e4be0e6`. |
 | URL de deployment con protección | El usuario navegaba a `…-fkc3o81mm-seel3.vercel.app` (deployment directo, 401 por Deployment Protection) en vez del alias `contratacion-swart.vercel.app` (200). | Usar siempre el alias de producción. |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Rediseño UI homogéneo (sector público)
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Tema institucional global | `globals.css` reescrito: paleta clara (azul `#2563eb` / verde `#16a34a` / navy), tipografía, botones, formularios, tablas, pills, tarjetas. Aplica a TODAS las pantallas (incluidas las de HTML simple). | ✅ |
+| Encabezado compartido | `app/_components/site-header.tsx` (cliente) + `app/_actions/auth.ts` (logout), inyectado desde `layout.tsx` (lee sesión). Franja superior azul→verde, marca, rol y cerrar sesión. Oculto en landing/login. | ✅ |
+| Páginas unificadas | login (con marca), dashboard (tiles), superadmin/usuarios/plantillas (tablas), contratos, cuentas de cobro (pills de estado), revisiones y supervisión (tarjetas) + migas de pan. | ✅ |
+| Limpieza | `.claude/` removido del control de versiones y añadido a `.gitignore`. | ✅ |
+| Verificación | `/` y `/login` → 200; login con marca; páginas internas con encabezado institucional + rol + logout. Deploy `a221118`. | ✅ |
