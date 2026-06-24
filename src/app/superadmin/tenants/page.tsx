@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { listarTenants } from "@/modules/tenants/actions";
+import { estadoTenant, ESTADO_LABEL, ESTADO_PILL } from "@/lib/tenants/estado";
 import { NuevaEntidad } from "./nueva-entidad";
 
 // Pantalla SUPERADMIN: gestión de entidades (tenants). Lista las entidades
@@ -9,8 +10,8 @@ import { NuevaEntidad } from "./nueva-entidad";
 
 export const dynamic = "force-dynamic";
 
-function fecha(d: Date) {
-  return new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(d);
+function fecha(d: Date | null) {
+  return d ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(d) : "—";
 }
 
 export default async function GestionEntidadesPage() {
@@ -49,31 +50,36 @@ export default async function GestionEntidadesPage() {
               <tr>
                 <th>Entidad</th>
                 <th>Identificador</th>
-                <th>NIT</th>
                 <th>Usuarios</th>
                 <th>Contratos</th>
                 <th>Estado</th>
-                <th>Creada</th>
+                <th>Vence</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {tenants.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.nombre}</td>
-                  <td>
-                    <span className="mono">{t.slug}</span>
-                  </td>
-                  <td>{t.nit ?? "—"}</td>
-                  <td>{t._count.users}</td>
-                  <td>{t._count.contratos}</td>
-                  <td>
-                    <span className={`pill ${t.activo ? "ok" : "off"}`}>
-                      {t.activo ? "Activa" : "Inactiva"}
-                    </span>
-                  </td>
-                  <td>{fecha(t.createdAt)}</td>
-                </tr>
-              ))}
+              {tenants.map((t) => {
+                const estado = estadoTenant(t);
+                return (
+                  <tr key={t.id}>
+                    <td>{t.nombre}</td>
+                    <td>
+                      <span className="mono">{t.slug}</span>
+                    </td>
+                    <td>{t._count.users}</td>
+                    <td>{t._count.contratos}</td>
+                    <td>
+                      <span className={ESTADO_PILL[estado]}>{ESTADO_LABEL[estado]}</span>
+                    </td>
+                    <td>{fecha(t.fechaVencimiento)}</td>
+                    <td>
+                      <Link href={`/superadmin/tenants/${t.id}`} className="logout">
+                        Ver detalle
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -12,21 +12,84 @@ import { crearTenantInput, type CrearTenantInput } from "./schema";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
+const TENANT_SELECT = {
+  id: true,
+  nombre: true,
+  slug: true,
+  nit: true,
+  activo: true,
+  fechaVencimiento: true,
+  createdAt: true,
+  _count: { select: { users: true, contratos: true } },
+} as const;
+
 /** Lista todas las entidades con conteo de usuarios y contratos. */
 export async function listarTenants() {
   await requireSuperadmin();
   return prisma.tenant.findMany({
     orderBy: { createdAt: "desc" },
+    select: TENANT_SELECT,
+  });
+}
+
+/** Detalle de una entidad. */
+export async function obtenerTenant(id: string) {
+  await requireSuperadmin();
+  return prisma.tenant.findUnique({
+    where: { id },
     select: {
-      id: true,
-      nombre: true,
-      slug: true,
-      nit: true,
-      activo: true,
-      createdAt: true,
-      _count: { select: { users: true, contratos: true } },
+      ...TENANT_SELECT,
+      _count: {
+        select: {
+          users: true,
+          contratos: true,
+          cuentasCobro: true,
+          plantillas: true,
+          actas: true,
+        },
+      },
     },
   });
+}
+
+/** Fija o limpia la fecha de vencimiento (suspensión automática por mora). */
+export async function actualizarVencimiento(
+  id: string,
+  fechaISO: string | null,
+): Promise<ActionResult> {
+  await requireSuperadmin();
+  const fecha = fechaISO && fechaISO.trim() ? new Date(fechaISO) : null;
+  if (fecha && Number.isNaN(fecha.getTime())) {
+    return { ok: false, error: "Fecha inválida." };
+  }
+  await prisma.tenant.update({ where: { id }, data: { fechaVencimiento: fecha } });
+  revalidatePath(`/superadmin/tenants/${id}`);
+  revalidatePath("/superadmin/tenants");
+  return { ok: true };
+}
+
+/**
+ * Vacía los datos operativos de la entidad (contratos, cuentas, informes, actas,
+ * plantillas) conservando la entidad y sus usuarios. El borrado de contratos
+ * arrastra en cascada asignaciones, cuentas, informes, anexos, firmas y revisiones.
+ */
+export async function vaciarDatosTenant(id: string): Promise<ActionResult> {
+  await requireSuperadmin();
+  await prisma.$transaction([
+    prisma.contrato.deleteMany({ where: { tenantId: id } }),
+    prisma.plantilla.deleteMany({ where: { tenantId: id } }),
+  ]);
+  revalidatePath(`/superadmin/tenants/${id}`);
+  revalidatePath("/superadmin/tenants");
+  return { ok: true };
+}
+
+/** Elimina por completo la entidad y TODOS sus datos y usuarios (cascada). */
+export async function eliminarTenant(id: string): Promise<ActionResult> {
+  await requireSuperadmin();
+  await prisma.tenant.delete({ where: { id } });
+  revalidatePath("/superadmin/tenants");
+  return { ok: true };
 }
 
 /** Crea una entidad y su primer usuario administrador (ADMIN_TENANT). */

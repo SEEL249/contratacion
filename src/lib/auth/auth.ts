@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "./password";
+import { tenantBloqueado } from "@/lib/tenants/estado";
 import { authConfig } from "./auth.config";
 
 // Configuración completa de Auth.js (NextAuth v5), runtime Node. Compone sobre la
@@ -34,6 +35,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const tenant = tenantSlug
           ? await prisma.tenant.findUnique({ where: { slug: tenantSlug } })
           : null;
+
+        // Suspensión por mora / inactividad: si la entidad está bloqueada,
+        // ningún usuario suyo puede iniciar sesión.
+        if (tenant && tenantBloqueado(tenant)) return null;
 
         const user = await prisma.user.findFirst({
           where: { email, tenantId: tenant?.id ?? null, activo: true },

@@ -93,6 +93,9 @@ model Tenant {
   config        Json?
   logoUrl       String?
   activo        Boolean  @default(true)
+  // Fecha de vencimiento del servicio/suscripción. Si pasa, la entidad queda
+  // "en mora" y se bloquea el acceso de sus usuarios (suspensión automática).
+  fechaVencimiento DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
