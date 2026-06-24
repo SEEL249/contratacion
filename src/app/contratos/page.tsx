@@ -12,21 +12,32 @@ export default async function ContratosPage() {
 
   return (
     <main>
-      <h1>Contratos</h1>
-      <p>
-        <Link href="/contratos/nuevo">+ Nuevo contrato</Link>
-      </p>
+      <div className="crumbs">
+        <Link href="/dashboard">Panel</Link> / Contratos
+      </div>
+      <div
+        className="page-head"
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "1rem", flexWrap: "wrap" }}
+      >
+        <div>
+          <h1>Contratos</h1>
+          <p>Contratos de prestación de servicios de la entidad y sus contratistas asignados.</p>
+        </div>
+        <Link href="/contratos/nuevo" className="btn btn-primary">
+          + Nuevo contrato
+        </Link>
+      </div>
 
       {contratos.length === 0 ? (
-        <p style={{ color: "var(--muted)" }}>Aún no hay contratos.</p>
+        <div className="form-card" style={{ color: "var(--muted)" }}>Aún no hay contratos. Crea el primero.</div>
       ) : (
-        <ul>
+        <ul className="list">
           {contratos.map((c) => (
-            <li key={c.id} style={{ marginBottom: "0.75rem" }}>
+            <li key={c.id}>
               <Link href={`/contratos/${c.id}`}>
-                <b>{c.objeto.slice(0, 80)}</b>
+                <b>{c.objeto.slice(0, 90)}</b>
               </Link>
-              <div style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
+              <div style={{ color: "var(--muted)", fontSize: "0.9rem", marginTop: "0.25rem" }}>
                 {c.tipoVinculacion} · {c.numeroCuotas} cuotas · {c.asignaciones.length} contratista(s)
               </div>
             </li>

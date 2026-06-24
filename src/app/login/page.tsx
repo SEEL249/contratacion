@@ -37,6 +37,16 @@ export default async function LoginPage({
   return (
     <main className="auth-wrap">
       <div className="card auth-card">
+        <div className="auth-brand">
+          <span className="logo" aria-hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4Z" />
+            </svg>
+          </span>
+          <span>
+            Contratación <small style={{ color: "var(--muted)", fontWeight: 500 }}>· Sector Público</small>
+          </span>
+        </div>
         <h1>Iniciar sesión</h1>
         <p className="sub">Accede al espacio de tu entidad.</p>
 

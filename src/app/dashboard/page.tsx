@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/session";
-import { signOut } from "@/lib/auth/auth";
 import type { Role } from "@prisma/client";
 
 // Panel inicial. Muestra accesos según el rol del usuario autenticado.
@@ -64,60 +63,32 @@ export default async function DashboardPage() {
 
   const accesos = ACCESOS[ctx.role] ?? [];
 
-  async function logout() {
-    "use server";
-    await signOut({ redirectTo: "/login" });
-  }
-
   return (
-    <>
-      <header className="topbar">
-        <div className="inner">
-          <Link href="/dashboard" className="brand" style={{ color: "var(--text)" }}>
-            <span className="logo" aria-hidden>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4Z" />
-              </svg>
-            </span>
-            Contratación <small style={{ color: "var(--muted)", fontWeight: 500 }}>· OSS</small>
-          </Link>
-          <div className="who">
-            <span>{ROLE_LABEL[ctx.role]}</span>
-            <form action={logout}>
-              <button type="submit" className="logout">
-                Cerrar sesión
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+    <main>
+      <div className="page-head">
+        <h1>Panel</h1>
+        <p>
+          Bienvenido. Tu rol es <b>{ROLE_LABEL[ctx.role]}</b>. Estos son tus accesos disponibles.
+        </p>
+      </div>
 
-      <main>
-        <div className="page-head">
-          <h1>Panel</h1>
-          <p>
-            Bienvenido. Tu rol es <b>{ROLE_LABEL[ctx.role]}</b>. Estos son tus accesos disponibles.
-          </p>
+      {accesos.length === 0 ? (
+        <p style={{ color: "var(--muted)" }}>No tienes accesos asignados.</p>
+      ) : (
+        <div className="tiles">
+          {accesos.map((a) => (
+            <Link key={a.href} href={a.href} className="tile">
+              <span className="ic" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  {a.icon}
+                </svg>
+              </span>
+              <h3>{a.label}</h3>
+              <p>{a.desc}</p>
+            </Link>
+          ))}
         </div>
-
-        {accesos.length === 0 ? (
-          <p style={{ color: "var(--muted)" }}>No tienes accesos asignados.</p>
-        ) : (
-          <div className="tiles">
-            {accesos.map((a) => (
-              <Link key={a.href} href={a.href} className="tile">
-                <span className="ic" aria-hidden>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    {a.icon}
-                  </svg>
-                </span>
-                <h3>{a.label}</h3>
-                <p>{a.desc}</p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </main>
-    </>
+      )}
+    </main>
   );
 }
