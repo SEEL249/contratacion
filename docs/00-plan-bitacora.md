@@ -313,3 +313,12 @@
 | Aviso 90 días | Modal al iniciar el aplicativo cuando faltan ≤90 días para el fin del contrato: a los **usuarios del tenant** (su entidad) y al **superadmin** (lista de entidades por finalizar). | ✅ |
 | Retiro de pagos | Eliminados `/api/webhooks/pago`, `lib/tenants/billing.ts`, `lib/tenants/plan.ts`, test de plan; `.env.example` actualizado. | ✅ |
 | Verificación | typecheck OK; 51/51 tests; deploy. | ✅ |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Activación de IA (Groq)
+
+| Actividad | Resultado |
+|-----------|-----------|
+| `GROK_API_KEY` | Cargada en los 3 entornos de Vercel + `.env.local` (gitignored). |
+| Configuración | `GROK_API_BASE_URL=https://api.groq.com/openai/v1`, `GROK_MODEL=llama-3.3-70b-versatile` (cliente compatible OpenAI, sin cambios de código). |
+| Validación | Key verificada contra Groq (lista de modelos + generación "FUNCIONA"). Redeploy READY. |
+| Funciones IA activas | Corrección/ampliación de informes de actividades y supervisión en 3ª persona. |
