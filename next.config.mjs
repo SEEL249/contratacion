@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   // @react-pdf/renderer no debe ser empaquetado por el bundler del servidor.
-  serverExternalPackages: ["@react-pdf/renderer"],
+  serverExternalPackages: ["@react-pdf/renderer", "nodemailer"],
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb", // evidencias/documentos

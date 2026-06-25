@@ -322,3 +322,12 @@
 | Configuración | `GROK_API_BASE_URL=https://api.groq.com/openai/v1`, `GROK_MODEL=llama-3.3-70b-versatile` (cliente compatible OpenAI, sin cambios de código). |
 | Validación | Key verificada contra Groq (lista de modelos + generación "FUNCIONA"). Redeploy READY. |
 | Funciones IA activas | Corrección/ampliación de informes de actividades y supervisión en 3ª persona. |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Correo por SMTP personal (sin Resend)
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Servicio de correo | `lib/mail/mail.ts` reescrito a **SMTP (nodemailer)** con config por env (`SMTP_HOST/PORT/SECURE/USER/PASSWORD`, `MAIL_FROM`). Sin credenciales → simula en consola (no rompe el flujo). | ✅ |
+| Dependencia | `nodemailer@^7` (peer de next-auth) + `@types/nodemailer`; `serverExternalPackages` incluye `nodemailer`. | ✅ |
+| `.env.example` | Sección de correo actualizada a SMTP personal (ej. Gmail con App Password). | ✅ |
+| Pendiente del usuario | Cargar credenciales SMTP del correo personal más adelante. | ⏳ |
