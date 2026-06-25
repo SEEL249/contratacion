@@ -1,44 +1,45 @@
 import { describe, it, expect } from "vitest";
 import {
   estadoTenant,
-  tenantEnMora,
+  contratoFinalizado,
   tenantBloqueado,
+  diasParaFin,
 } from "../src/lib/tenants/estado";
 
 const ahora = new Date("2026-06-24T12:00:00Z");
 const ayer = new Date("2026-06-23T00:00:00Z");
 const manana = new Date("2026-06-25T00:00:00Z");
 
-describe("estado del tenant (mora / suspensión)", () => {
-  it("activa sin vencimiento", () => {
-    const t = { activo: true, fechaVencimiento: null };
+describe("estado del tenant según vigencia del contrato", () => {
+  it("activa sin fecha de fin (contrato indefinido)", () => {
+    const t = { activo: true, fechaFinContrato: null };
     expect(estadoTenant(t, ahora)).toBe("ACTIVA");
     expect(tenantBloqueado(t, ahora)).toBe(false);
   });
 
-  it("activa con vencimiento futuro", () => {
-    const t = { activo: true, fechaVencimiento: manana };
+  it("activa con contrato vigente (fin futuro)", () => {
+    const t = { activo: true, fechaFinContrato: manana };
     expect(estadoTenant(t, ahora)).toBe("ACTIVA");
-    expect(tenantEnMora(t, ahora)).toBe(false);
+    expect(contratoFinalizado(t, ahora)).toBe(false);
     expect(tenantBloqueado(t, ahora)).toBe(false);
   });
 
-  it("en mora cuando el vencimiento ya pasó → bloqueado", () => {
-    const t = { activo: true, fechaVencimiento: ayer };
-    expect(tenantEnMora(t, ahora)).toBe(true);
-    expect(estadoTenant(t, ahora)).toBe("EN_MORA");
+  it("contrato finalizado (fin en el pasado) → bloqueada", () => {
+    const t = { activo: true, fechaFinContrato: ayer };
+    expect(contratoFinalizado(t, ahora)).toBe(true);
+    expect(estadoTenant(t, ahora)).toBe("FINALIZADA");
     expect(tenantBloqueado(t, ahora)).toBe(true);
   });
 
-  it("suspendida manualmente (inactivo) → bloqueado, prioritario sobre mora", () => {
-    const t = { activo: false, fechaVencimiento: manana };
+  it("deshabilitada manualmente → SUSPENDIDA (prioritario) y bloqueada", () => {
+    const t = { activo: false, fechaFinContrato: manana };
     expect(estadoTenant(t, ahora)).toBe("SUSPENDIDA");
     expect(tenantBloqueado(t, ahora)).toBe(true);
   });
 
-  it("inactivo y en mora → SUSPENDIDA (prioridad) pero bloqueado igual", () => {
-    const t = { activo: false, fechaVencimiento: ayer };
-    expect(estadoTenant(t, ahora)).toBe("SUSPENDIDA");
-    expect(tenantBloqueado(t, ahora)).toBe(true);
+  it("diasParaFin: positivo a futuro, negativo si terminó, null sin fecha", () => {
+    expect(diasParaFin(new Date("2026-09-22T12:00:00Z"), ahora)).toBe(90);
+    expect(diasParaFin(ayer, ahora)).toBe(-1);
+    expect(diasParaFin(null, ahora)).toBeNull();
   });
 });

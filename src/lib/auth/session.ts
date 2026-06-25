@@ -24,9 +24,9 @@ export async function requireSession(): Promise<SessionContext> {
   if (session.user.tenantId) {
     const t = await prisma.tenant.findUnique({
       where: { id: session.user.tenantId },
-      select: { activo: true, fechaVencimiento: true },
+      select: { activo: true, fechaFinContrato: true },
     });
-    if (!t || tenantBloqueado(t)) throw new Error("Entidad suspendida o en mora");
+    if (!t || tenantBloqueado(t)) throw new Error("Entidad suspendida o contrato finalizado");
   }
 
   return {

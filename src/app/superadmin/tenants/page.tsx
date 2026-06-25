@@ -2,8 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { listarTenants } from "@/modules/tenants/actions";
-import { estadoTenant, ESTADO_LABEL, ESTADO_PILL } from "@/lib/tenants/estado";
-import { PLAN_LABEL, type Plan } from "@/lib/tenants/plan";
+import { estadoTenant, ESTADO_LABEL, ESTADO_PILL, diasParaFin } from "@/lib/tenants/estado";
 import { NuevaEntidad } from "./nueva-entidad";
 
 // Pantalla SUPERADMIN: gestión de entidades (tenants). Lista las entidades
@@ -51,30 +50,36 @@ export default async function GestionEntidadesPage() {
               <tr>
                 <th>Entidad</th>
                 <th>Identificador</th>
-                <th>Plan</th>
                 <th>Usuarios</th>
                 <th>Contratos</th>
                 <th>Estado</th>
-                <th>Vence</th>
+                <th>Fin de contrato</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {tenants.map((t) => {
                 const estado = estadoTenant(t);
+                const dias = diasParaFin(t.fechaFinContrato);
                 return (
                   <tr key={t.id}>
                     <td>{t.nombre}</td>
                     <td>
                       <span className="mono">{t.slug}</span>
                     </td>
-                    <td>{PLAN_LABEL[t.plan as Plan]}</td>
                     <td>{t._count.users}</td>
                     <td>{t._count.contratos}</td>
                     <td>
                       <span className={ESTADO_PILL[estado]}>{ESTADO_LABEL[estado]}</span>
                     </td>
-                    <td>{fecha(t.fechaVencimiento)}</td>
+                    <td>
+                      {fecha(t.fechaFinContrato)}
+                      {dias !== null && dias > 0 && dias <= 90 && (
+                        <span className="pill warn" style={{ marginLeft: "0.4rem" }}>
+                          {dias}d
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <Link href={`/superadmin/tenants/${t.id}`} className="logout">
                         Ver detalle

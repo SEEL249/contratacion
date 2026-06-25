@@ -4,67 +4,61 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   cambiarEstadoTenant,
-  cambiarPlan,
-  registrarPago,
+  actualizarContrato,
   vaciarDatosTenant,
   eliminarTenant,
 } from "@/modules/tenants/actions";
 
-export function PlanYPago({ id, plan }: { id: string; plan: string }) {
+export function ContratoForm({
+  id,
+  inicio,
+  fin,
+}: {
+  id: string;
+  inicio: string; // yyyy-mm-dd o ""
+  fin: string; // yyyy-mm-dd o ""
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  function guardarPlan(e: React.FormEvent<HTMLFormElement>) {
+  function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const nuevo = String(fd.get("plan") ?? plan);
     setMsg(null);
     startTransition(async () => {
-      const res = await cambiarPlan(id, nuevo);
-      setMsg(res.ok ? "Plan actualizado; vencimiento recalculado." : res.error);
-      router.refresh();
-    });
-  }
-
-  function pagar() {
-    if (!window.confirm("¿Registrar un pago? Renueva el servicio un periodo del plan y reactiva la entidad.")) return;
-    setMsg(null);
-    startTransition(async () => {
-      const res = await registrarPago(id);
-      setMsg(res.ok ? "Pago registrado: servicio renovado y entidad reactivada." : res.error);
+      const res = await actualizarContrato({
+        id,
+        fechaInicioContrato: String(fd.get("fechaInicioContrato") ?? "") || null,
+        fechaFinContrato: String(fd.get("fechaFinContrato") ?? ""),
+      });
+      setMsg(res.ok ? { ok: true, text: "Vigencia del contrato actualizada." } : { ok: false, text: res.error });
       router.refresh();
     });
   }
 
   return (
-    <div className="form-card">
-      {msg && <div className="alert ok">{msg}</div>}
-      <form onSubmit={guardarPlan}>
+    <form onSubmit={guardar} className="form-card">
+      {msg && <div className={`alert ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
+      <div className="form-grid">
         <label>
-          Plan de suscripción
-          <select name="plan" defaultValue={plan}>
-            <option value="MENSUAL">Mensual</option>
-            <option value="TRIMESTRAL">Trimestral</option>
-            <option value="SEMESTRAL">Semestral</option>
-            <option value="ANUAL">Anual</option>
-          </select>
+          Inicio del contrato
+          <input type="date" name="fechaInicioContrato" defaultValue={inicio} />
         </label>
-        <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.5rem 0 1rem" }}>
-          El vencimiento se calcula a partir de la fecha de creación según el plan. Al cambiar el
-          plan se recalcula. Cuando el vencimiento pasa, la entidad entra en <b>mora</b> y se
-          suspende automáticamente.
-        </p>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          <button type="submit" disabled={pending}>
-            {pending ? "Guardando…" : "Guardar plan"}
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={pagar} disabled={pending}>
-            Registrar pago (renovar)
-          </button>
-        </div>
-      </form>
-    </div>
+        <label>
+          Fin del contrato (vigencia)
+          <input type="date" name="fechaFinContrato" defaultValue={fin} required />
+        </label>
+      </div>
+      <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0.75rem 0 1rem" }}>
+        La entidad permanece habilitada mientras el contrato esté vigente. Al pasar la fecha de fin,
+        se <b>suspende automáticamente</b> el acceso de todos sus usuarios. Para renovar, actualiza
+        la fecha de fin con la nueva vigencia adjudicada.
+      </p>
+      <button type="submit" disabled={pending}>
+        {pending ? "Guardando…" : "Guardar vigencia"}
+      </button>
+    </form>
   );
 }
 
@@ -83,7 +77,7 @@ export function AccionesTenant({
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
 
-  function toggleSuspension() {
+  function toggleHabilitacion() {
     startTransition(async () => {
       await cambiarEstadoTenant(id, !activo);
       router.refresh();
@@ -124,8 +118,8 @@ export function AccionesTenant({
     <div className="form-card">
       {msg && <div className="alert ok">{msg}</div>}
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <button type="button" className="btn btn-ghost" onClick={toggleSuspension} disabled={pending}>
-          {activo ? "Suspender entidad" : "Reactivar entidad"}
+        <button type="button" className="btn btn-ghost" onClick={toggleHabilitacion} disabled={pending}>
+          {activo ? "Deshabilitar entidad" : "Habilitar entidad"}
         </button>
         <button
           type="button"
@@ -147,9 +141,9 @@ export function AccionesTenant({
         </button>
       </div>
       <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: 0 }}>
-        <b>Suspender</b>: bloquea el acceso de los usuarios (reversible). · <b>Vaciar</b>: borra los
-        datos operativos, conserva la entidad y usuarios. · <b>Eliminar</b>: borra todo y la entidad
-        (irreversible).
+        <b>Deshabilitar</b>: bloquea el acceso manualmente (independiente del contrato). ·{" "}
+        <b>Vaciar</b>: borra los datos operativos, conserva la entidad y usuarios. ·{" "}
+        <b>Eliminar</b>: borra todo y la entidad (irreversible).
       </p>
     </div>
   );

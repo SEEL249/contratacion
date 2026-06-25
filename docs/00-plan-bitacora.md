@@ -300,3 +300,16 @@
 | Webhook de pagos | `POST /api/webhooks/pago` protegido por `PAGOS_WEBHOOK_SECRET` (header `x-webhook-secret`); body `{tenantId}` o `{slug}` → renueva + reactiva. Verificado: 401 sin/bad secret, rechaza tenant inexistente. | ✅ |
 | Bloqueo de sesión activa | `requireSession` ahora verifica el estado del tenant: si está suspendido o en mora, lanza y la página/acción redirige a /login (antes solo se bloqueaba el nuevo login). | ✅ |
 | Verificación | typecheck OK; 55/55 tests; deploy `d06bafb` + este. | ✅ |
+
+### Sesión 3 (cont.) — 24 de Junio de 2026 — Replanteo: habilitación por vigencia de contrato (no pago)
+
+> El sector público adquiere por licitación/mínima cuantía; el pago se rige por los términos del proceso. Se retira el esquema de pasarela/plan/mora y se reemplaza por **habilitación según la duración del contrato** de la entidad con la plataforma.
+
+| Actividad | Descripción | Estado |
+|-----------|-------------|--------|
+| Vigencia de contrato | `Tenant.fechaInicioContrato` / `fechaFinContrato` + migración `20260624030000_tenant_contrato` (backfill desde el antiguo `fechaVencimiento`). Columnas `plan`/`fechaVencimiento` quedan dormidas. | ✅ |
+| Estado por contrato | `estado.ts`: ACTIVA / SUSPENDIDA (manual) / FINALIZADA (fin de contrato pasado). `tenantBloqueado` bloquea login y sesiones activas. | ✅ |
+| Acciones superadmin | crear con vigencia; `actualizarContrato` (renovar fechas); habilitar/deshabilitar; vaciar; eliminar. Retirados pago/plan/webhook/billing. | ✅ |
+| Aviso 90 días | Modal al iniciar el aplicativo cuando faltan ≤90 días para el fin del contrato: a los **usuarios del tenant** (su entidad) y al **superadmin** (lista de entidades por finalizar). | ✅ |
+| Retiro de pagos | Eliminados `/api/webhooks/pago`, `lib/tenants/billing.ts`, `lib/tenants/plan.ts`, test de plan; `.env.example` actualizado. | ✅ |
+| Verificación | typecheck OK; 51/51 tests; deploy. | ✅ |

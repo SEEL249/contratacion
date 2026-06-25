@@ -2,14 +2,22 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireSuperadmin } from "@/lib/auth/session";
 import { obtenerTenant } from "@/modules/tenants/actions";
-import { estadoTenant, ESTADO_LABEL, ESTADO_PILL } from "@/lib/tenants/estado";
-import { PLAN_LABEL, diasParaVencer, type Plan } from "@/lib/tenants/plan";
-import { PlanYPago, AccionesTenant } from "./acciones";
+import {
+  estadoTenant,
+  ESTADO_LABEL,
+  ESTADO_PILL,
+  diasParaFin,
+  DIAS_AVISO_FIN_CONTRATO,
+} from "@/lib/tenants/estado";
+import { ContratoForm, AccionesTenant } from "./acciones";
 
 export const dynamic = "force-dynamic";
 
 function fecha(d: Date | null) {
   return d ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(d) : "—";
+}
+function toInputDate(d: Date | null) {
+  return d ? new Date(d).toISOString().slice(0, 10) : "";
 }
 
 export default async function TenantDetallePage({
@@ -29,7 +37,7 @@ export default async function TenantDetallePage({
   if (!tenant) notFound();
 
   const estado = estadoTenant(tenant);
-  const dias = diasParaVencer(tenant.fechaVencimiento);
+  const dias = diasParaFin(tenant.fechaFinContrato);
 
   return (
     <main>
@@ -42,6 +50,12 @@ export default async function TenantDetallePage({
         <h1 style={{ margin: 0 }}>{tenant.nombre}</h1>
         <span className={ESTADO_PILL[estado]}>{ESTADO_LABEL[estado]}</span>
       </div>
+
+      {dias !== null && dias > 0 && dias <= DIAS_AVISO_FIN_CONTRATO && (
+        <div className="alert" style={{ background: "#fef3c7", border: "1px solid #fde68a", color: "#b45309" }}>
+          ⚠️ El contrato de esta entidad finaliza en <b>{dias} día(s)</b> ({fecha(tenant.fechaFinContrato)}).
+        </div>
+      )}
 
       <div className="section-sep">Información</div>
       <div className="table-card">
@@ -56,22 +70,22 @@ export default async function TenantDetallePage({
               <td>{tenant.nit ?? "—"}</td>
             </tr>
             <tr>
-              <th>Plan</th>
-              <td>{PLAN_LABEL[tenant.plan as Plan]}</td>
-            </tr>
-            <tr>
               <th>Estado</th>
               <td>
                 <span className={ESTADO_PILL[estado]}>{ESTADO_LABEL[estado]}</span>
               </td>
             </tr>
             <tr>
-              <th>Vence</th>
+              <th>Inicio del contrato</th>
+              <td>{fecha(tenant.fechaInicioContrato)}</td>
+            </tr>
+            <tr>
+              <th>Fin del contrato</th>
               <td>
-                {fecha(tenant.fechaVencimiento)}
+                {fecha(tenant.fechaFinContrato)}
                 {dias !== null && (
                   <span style={{ color: "var(--muted)", marginLeft: "0.5rem" }}>
-                    ({dias < 0 ? `vencido hace ${-dias} día(s)` : `en ${dias} día(s)`})
+                    ({dias < 0 ? `finalizado hace ${-dias} día(s)` : `en ${dias} día(s)`})
                   </span>
                 )}
               </td>
@@ -104,8 +118,12 @@ export default async function TenantDetallePage({
         </table>
       </div>
 
-      <div className="section-sep">Plan y pagos</div>
-      <PlanYPago id={tenant.id} plan={tenant.plan} />
+      <div className="section-sep">Vigencia del contrato</div>
+      <ContratoForm
+        id={tenant.id}
+        inicio={toInputDate(tenant.fechaInicioContrato)}
+        fin={toInputDate(tenant.fechaFinContrato)}
+      />
 
       <div className="section-sep">Acciones</div>
       <AccionesTenant id={tenant.id} nombre={tenant.nombre} slug={tenant.slug} activo={tenant.activo} />
